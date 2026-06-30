@@ -1,13 +1,14 @@
 import { Link, useResolvedPath } from "react-router-dom";
-import { ShoppingBagIcon, ShoppingCartIcon } from "lucide-react";
+import { ShoppingBagIcon, ShoppingCartIcon, LogOutIcon } from "lucide-react";
 import ThemeSelector from "./ThemeSelector";
 import { useProductStore } from "../store/useProductStore";
+import { useAuthStore } from "../store/useAuthStore";
 
 function Navbar() {
   const { pathname } = useResolvedPath();
   const isHomePage = pathname === "/";
-
   const { products } = useProductStore();
+  const { user, logout } = useAuthStore();
 
   return (
     <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-content/10 sticky top-0 z-50">
@@ -19,7 +20,7 @@ function Navbar() {
               <div className="flex items-center gap-2">
                 <ShoppingCartIcon className="size-9 text-primary" />
                 <span
-                  className="font-semibold font-mono tracking-widest text-2xl 
+                  className="font-semibold font-mono tracking-widest text-2xl
                     bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary"
                 >
                   POSGRESTORE
@@ -32,7 +33,7 @@ function Navbar() {
           <div className="flex items-center gap-4">
             <ThemeSelector />
 
-            {isHomePage && (
+            {isHomePage && user && (
               <div className="indicator">
                 <div className="p-2 rounded-full hover:bg-base-200 transition-colors">
                   <ShoppingBagIcon className="size-5" />
@@ -42,10 +43,22 @@ function Navbar() {
                 </div>
               </div>
             )}
+
+            {user && (
+              <button
+                onClick={logout}
+                className="btn btn-ghost btn-sm gap-2"
+                title="Logout"
+              >
+                <LogOutIcon className="size-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 export default Navbar;

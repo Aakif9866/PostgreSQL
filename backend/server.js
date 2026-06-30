@@ -3,37 +3,35 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
 import cors from "cors";
-import productRoutes from "./routes/productRoutes.js"
-import {aj} from "./lib/arcjet.js"  
+import cookieParser from "cookie-parser";
+import productRoutes from "./routes/productRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import { aj } from "./lib/arcjet.js";
+import { sql } from "./config/db.js";
 
-import {sql} from "./config/db.js"
+dotenv.config();
 
-dotenv.config()
-
-const PORT = process.env.PORT||5001;
+const PORT = process.env.PORT || 5001;
 
 const app = express();
 
-app.use(express.json()) // is middleware that parses incoming JSON data from the request body and makes it available in req.body.
+app.use(express.json());
 
-app.use(cors())
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true, // allow cookies to be sent
+  })
+);
 
-app.use(helmet())
-// security middleware that helps you protect your app by setting various
-// http headers
+app.use(helmet());
+app.use(morgan("dev"));
+app.use(cookieParser());
 
-app.use(morgan("dev"))
-//  HTTP request logger middleware for node.js
-
-
-
-// apply arcjet rate limiting to all the routes
 // apply arcjet rate-limit to all routes
 app.use(async (req, res, next) => {
   try {
-    const decision = await aj.protect(req, {
-      requested: 1, // specifies that each request consumes 1 token
-    });
+    const decision = await aj.protect(req, { requested: 1 });
 
     if (decision.isDenied()) {
       if (decision.reason.isRateLimit()) {
@@ -46,7 +44,6 @@ app.use(async (req, res, next) => {
       return;
     }
 
-    // check for spoofed bots
     if (decision.results.some((result) => result.reason.isBot() && result.reason.isSpoofed())) {
       res.status(403).json({ error: "Spoofed bot detected" });
       return;
@@ -59,14 +56,13 @@ app.use(async (req, res, next) => {
   }
 });
 
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
 
-app.use("/api/products",productRoutes)
-
-
-async function initDB(){
-    try {
-        await sql`
-        CREATE TABLE IF NOT EXISTS products (
+async function initDB() {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         image VARCHAR(255) NOT NULL,
@@ -74,16 +70,11 @@ async function initDB(){
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
-
     console.log("Database initialized successfully");
-    } catch (error) {
-        console.log("error initialising the database : ",error);
-        
-    }
+  } catch (error) {
+    console.log("Error initialising the database:", error);
+  }
 }
-
-
-
 
 initDB().then(() => {
   app.listen(PORT, () => {
