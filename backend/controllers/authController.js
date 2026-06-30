@@ -3,9 +3,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// hardcoded credentials
-const VALID_USERNAME = "Aakif";
-const VALID_PASSWORD = "Aakif@1877";
+// credentials loaded from env — never hardcoded
+const VALID_USERNAME = process.env.ADMIN_USERNAME;
+const VALID_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export const login = (req, res) => {
   const { username, password } = req.body;
